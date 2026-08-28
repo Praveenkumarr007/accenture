@@ -19,10 +19,10 @@ export default function TopNav() {
   };
 
   return (
-    <header className="h-14 bg-navy-800/80 border-b border-slate-700/50 flex items-center px-6 backdrop-blur-sm">
+    <header className="h-14 bg-navy-800/70 border-b border-slate-700 flex items-center px-6 backdrop-blur-xl">
       <div className="flex items-center gap-3">
-        <h1 className="text-sm font-semibold text-white">BusinessIntelligence.AI</h1>
-        <span className="text-[10px] px-2 py-0.5 bg-accent/20 text-accent-light rounded-full">Demo Mode</span>
+        <h1 className="text-sm font-semibold text-slate-300">BusinessIntelligence.AI</h1>
+        <span className="text-[10px] px-2 py-0.5 bg-accent/10 text-accent rounded-full font-medium">Demo Mode</span>
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
@@ -31,7 +31,7 @@ export default function TopNav() {
           <select
             onChange={e => handleScenario(e.target.value)}
             value={activeScenario || ''}
-            className="bg-navy-700 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-accent"
+            className="bg-navy-700 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-400 focus:outline-none focus:border-accent"
           >
             <option value="">Select Scenario</option>
             <option value="major_decline">Major Revenue Decline</option>
@@ -45,21 +45,21 @@ export default function TopNav() {
         <div className="relative">
           <button
             onClick={() => setShowPersona(!showPersona)}
-            className="flex items-center gap-2 bg-navy-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-slate-300 hover:border-accent transition"
+            className="flex items-center gap-2 bg-navy-700 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-400 hover:border-accent transition"
           >
             <User className="w-3.5 h-3.5" />
             <span>{user?.role_name || 'CEO'}</span>
             <ChevronDown className="w-3 h-3" />
           </button>
           {showPersona && (
-            <div className="absolute right-0 top-full mt-1 bg-navy-700 border border-slate-600 rounded-lg shadow-xl z-50 w-48 py-1">
+            <div className="absolute right-0 top-full mt-1 bg-navy-800 border border-slate-700 rounded-lg shadow-apple z-50 w-48 py-1">
               <p className="px-3 py-1 text-[10px] text-slate-500 uppercase tracking-wider">Switch Persona</p>
               {personas.map(p => (
                 <button
                   key={p}
                   onClick={() => { switchPersona(p); setShowPersona(false); }}
-                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-accent/10 transition ${
-                    user?.role_name === p ? 'text-accent-light' : 'text-slate-300'
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-navy-600 transition ${
+                    user?.role_name === p ? 'text-accent' : 'text-slate-400'
                   }`}
                 >
                   {p}
@@ -69,9 +69,9 @@ export default function TopNav() {
           )}
         </div>
 
-        <button className="relative p-2 text-slate-400 hover:text-white transition">
+        <button className="relative p-2 text-slate-500 hover:text-slate-300 transition">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full" />
         </button>
       </div>
     </header>

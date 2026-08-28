@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
 import type { KPICard } from '../types';
 import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { formatPercent } from '../lib/utils';
 
 export default function KPIMonitorPage() {
   const { persona } = useAuth();
@@ -52,12 +53,25 @@ export default function KPIMonitorPage() {
               <div className="text-2xl font-bold text-foreground mb-2">{formatValue(kpi.value)}</div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
-                  {kpi.change_percent < 0 ? <TrendingDown size={14} className="text-destructive" /> : <TrendingUp size={14} className="text-positive" />}
-                  <span className={`text-sm font-medium ${kpi.change_percent < 0 ? 'text-destructive' : 'text-positive'}`}>
-                    {kpi.change_percent > 0 ? '+' : ''}{kpi.change_percent}%
-                  </span>
+                  {kpi.change_percent == null ? (
+                    <span className="text-sm font-medium text-muted-foreground">{formatPercent(kpi.change_percent)}</span>
+                  ) : kpi.change_percent < 0 ? (
+                    <>
+                      <TrendingDown size={14} className="text-destructive" />
+                      <span className={`text-sm font-medium text-destructive`}>
+                        {formatPercent(kpi.change_percent)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp size={14} className="text-positive" />
+                      <span className={`text-sm font-medium text-positive`}>
+                        {formatPercent(kpi.change_percent)}
+                      </span>
+                    </>
+                  )}
                 </div>
-                <span className="text-[10px] text-muted-foreground">7-day change</span>
+                <span className="text-[10px] text-muted-foreground">{kpi.change_percent == null ? 'Full-period data' : 'period change'}</span>
               </div>
               <div className="mt-3 pt-3 border-t border-border flex items-center gap-1">
                 <Activity size={10} className="text-muted-foreground" />

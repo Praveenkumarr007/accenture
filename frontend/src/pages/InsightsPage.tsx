@@ -40,7 +40,7 @@ export default function InsightsPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.change_percent < 0 ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.change_percent == null ? 'bg-blue-500/20' : insight.change_percent < 0 ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
                     {insight.materiality?.priority === 'CRITICAL' || insight.materiality?.priority === 'HIGH' ? (
                       <AlertTriangle className="w-5 h-5 text-red-400" />
                     ) : (

@@ -19,7 +19,8 @@ export function formatNumber(value: number): string {
   return value.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
-export function formatPercent(value: number): string {
+export function formatPercent(value: number | null | undefined): string {
+  if (value == null) return 'N/A';
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;
 }
@@ -30,7 +31,8 @@ export function formatCompact(value: number): string {
   return value.toFixed(0);
 }
 
-export function getChangeColor(value: number): string {
+export function getChangeColor(value: number | null | undefined): string {
+  if (value == null) return 'text-slate-400';
   if (value > 0) return 'text-green-400';
   if (value < 0) return 'text-red-400';
   return 'text-slate-400';

@@ -64,11 +64,12 @@ class AnalysisOrchestrator:
         current_value = kpi_data.get("current", 0)
         previous_value = kpi_data.get("previous", 0)
         change_percent = kpi_data.get("change_percent", 0)
+        has_prior = change_percent is not None
 
         materiality = self.materiality_engine.assess_materiality(
             kpi_name=kpi_name,
             current_value=current_value,
-            previous_value=previous_value,
+            previous_value=previous_value if has_prior else current_value,
             threshold_percent=contract.get("threshold_percent", 10.0),
         )
 
@@ -209,9 +210,10 @@ class AnalysisOrchestrator:
         This is the ONLY part where the LLM should be used.
         For this demo, we generate deterministic narratives.
         """
-        direction = "increased" if change_percent > 0 else "decreased"
-        abs_change = abs(change_percent)
+        direction = "increased" if (change_percent or 0) > 0 else "decreased"
+        abs_change = abs(change_percent) if change_percent is not None else 0
         priority = materiality.get("priority", "LOW")
+        no_baseline = change_percent is None
 
         if abstention["should_abstain"]:
             missing = confidence.get("data_sources_missing", [])
@@ -228,8 +230,19 @@ class AnalysisOrchestrator:
 
         top_drivers = [d for d in drivers if d.get("contribution_percent", 0) >= 5][:3]
 
+        if no_baseline:
+            baseline_txt = (
+                f"**{kpi_name}** (Priority: {priority})\n\n"
+                f"Data covers a single period (no prior baseline available), so change% is not computed.\n"
+                f"Current value: {current_value:,.2f}\n\n"
+            )
+        elif persona == "CEO":
+            baseline_txt = f"**{kpi_name} {direction} {abs_change:.1f}%** (Priority: {priority})\n\n"
+        else:
+            baseline_txt = f"**{kpi_name} {direction} {abs_change:.1f}%**\n\n"
+
         if persona == "CEO":
-            narrative = f"**{kpi_name} {direction} {abs_change:.1f}%** (Priority: {priority})\n\n"
+            narrative = baseline_txt
             narrative += "Key drivers:\n"
             for d in top_drivers:
                 narrative += f"- {d['name']}: {d['contribution_percent']}% contribution\n"
@@ -241,7 +254,7 @@ class AnalysisOrchestrator:
                 narrative += f"Owner: {recommendations[0]['owner']}\n"
                 narrative += f"Expected impact: {recommendations[0]['expected_impact']}\n"
         else:
-            narrative = f"**{kpi_name} {direction} {abs_change:.1f}%**\n\n"
+            narrative = baseline_txt
             narrative += "Detailed driver breakdown:\n"
             for d in drivers[:5]:
                 narrative += f"- {d['name']}: {d['contribution_percent']}% ({d.get('change_percent', 0):.1f}% change)\n"

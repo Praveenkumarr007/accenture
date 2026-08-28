@@ -30,7 +30,7 @@ export default function ReportsPage() {
           <p className="text-sm text-slate-400 mt-0.5">Generate business insight reports</p>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 bg-navy-800 border border-slate-600 rounded-lg text-xs text-slate-300 hover:border-accent transition">
+          <button className="flex items-center gap-2 px-3 py-2 bg-navy-800 border border-slate-700 rounded-lg text-xs text-slate-300 hover:border-accent transition">
             <Printer className="w-3.5 h-3.5" /> Print
           </button>
           <button className="flex items-center gap-2 px-3 py-2 gradient-accent rounded-lg text-xs text-white transition">
@@ -51,7 +51,9 @@ export default function ReportsPage() {
 
           <div className="mb-4">
             <h3 className="text-xs font-medium text-slate-400 mb-1">EXECUTIVE SUMMARY</h3>
-            <p className="text-sm text-slate-300">{insight.kpi_name} {insight.change_percent >= 0 ? 'increased' : 'decreased'} by {Math.abs(insight.change_percent).toFixed(1)}% in the last 7 days compared to the prior week.</p>
+            <p className="text-sm text-slate-300">{insight.change_percent != null
+                ? `${insight.kpi_name} ${insight.change_percent >= 0 ? 'increased' : 'decreased'} by ${Math.abs(insight.change_percent).toFixed(1)}% in the current period${insight.change_percent != null ? '' : ''}.`
+                : `Full data period (no prior baseline available) for ${insight.kpi_name}.`}</p>
             <p className="text-sm text-slate-300 mt-1">
               Current value: {formatCurrency(insight.current_value)} | Previous: {formatCurrency(insight.previous_value)}
             </p>

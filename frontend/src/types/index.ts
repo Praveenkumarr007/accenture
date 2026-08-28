@@ -12,7 +12,8 @@ export interface KPICard {
   name: string;
   value: number;
   previous_value: number;
-  change_percent: number;
+  change_percent: number | null;
+  has_prior?: boolean;
   priority: string;
   status: string;
   trend: number[];
@@ -63,7 +64,7 @@ export interface Insight {
   kpi_description?: string;
   current_value: number;
   previous_value: number;
-  change_percent: number;
+  change_percent: number | null;
   materiality: {
     priority: string;
     total_score: number;

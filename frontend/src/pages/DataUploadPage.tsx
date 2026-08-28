@@ -102,7 +102,7 @@ export default function DataUploadPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Data Upload</h1>
+        <h1 className="text-2xl font-bold text-slate-300">Data Upload</h1>
         <p className="text-slate-400 mt-1">Upload CSV, Excel, or SQL files — the system auto-detects and maps your data to KPIs</p>
       </div>
 
@@ -152,23 +152,23 @@ export default function DataUploadPage() {
                 <div className="flex items-center gap-3">
                   {selectedFile.name.endsWith('.sql') ? <Database className="w-5 h-5 text-purple-400" /> : <FileSpreadsheet className="w-5 h-5 text-green-400" />}
                   <div>
-                    <p className="text-sm font-medium text-white">{selectedFile.name}</p>
+                    <p className="text-sm font-medium text-slate-300">{selectedFile.name}</p>
                     <p className="text-xs text-slate-400">{(selectedFile.size / 1024).toFixed(1)} KB</p>
                   </div>
                 </div>
-                <button onClick={clearSelection} className="text-slate-400 hover:text-white p-1"><X className="w-4 h-4" /></button>
+                <button onClick={clearSelection} className="text-slate-400 hover:text-slate-300 p-1"><X className="w-4 h-4" /></button>
               </div>
 
               <div className="px-4 py-3 border-b border-slate-700">
                 <label className="block text-xs text-slate-400 mb-1">Table Name</label>
-                <input type="text" value={tableName} onChange={(e) => setTableName(e.target.value)} placeholder="my_custom_table" className="w-full bg-navy-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono" />
+                <input type="text" value={tableName} onChange={(e) => setTableName(e.target.value)} placeholder="my_custom_table" className="w-full bg-navy-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono" />
               </div>
 
               {autoDetect && autoDetect.detected_type !== 'unknown' && (
                 <div className="p-4 border-b border-slate-700">
                   <div className="flex items-center gap-2 mb-3">
                     <Zap className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-sm font-medium text-white">Auto-Detected Mapping</h3>
+                    <h3 className="text-sm font-medium text-slate-300">Auto-Detected Mapping</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_COLORS[autoDetect.detected_type] || TYPE_COLORS.unknown}`}>
                       {TYPE_LABELS[autoDetect.detected_type] || autoDetect.detected_type}
                     </span>
@@ -220,7 +220,7 @@ export default function DataUploadPage() {
               )}
 
               <div className="px-4 py-3 border-t border-slate-700 flex justify-end">
-                <button onClick={handleUpload} disabled={loading} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                <button onClick={handleUpload} disabled={loading} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 disabled:text-slate-500 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
                   {loading ? (<><span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> Processing...</>) : (<><Upload className="w-4 h-4" /> {autoDetect?.detected_type !== 'unknown' ? 'Upload & Connect to Dashboard' : 'Upload to Database'}</>)}
                 </button>
               </div>
@@ -242,7 +242,7 @@ export default function DataUploadPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <Database className="w-4 h-4 text-blue-400" />
-                        <h3 className="text-sm font-mono font-medium text-white">{t.table_name}</h3>
+                        <h3 className="text-sm font-mono font-medium text-slate-300">{t.table_name}</h3>
                       </div>
                       <div className="flex gap-1">
                         <button onClick={() => handleViewTable(t.table_name)} className="p-1.5 text-slate-400 hover:text-blue-400 rounded transition" title="View"><Eye className="w-3.5 h-3.5" /></button>
@@ -274,13 +274,13 @@ export default function DataUploadPage() {
           {viewingTable && (
             <div className="bg-navy-800 border border-slate-700 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-                <h3 className="text-sm font-medium text-white font-mono">{viewingTable.name} — {viewingTable.data.total_rows?.toLocaleString()} rows</h3>
-                <button onClick={() => setViewingTable(null)} className="text-slate-400 hover:text-white"><EyeOff className="w-4 h-4" /></button>
+                <h3 className="text-sm font-medium text-slate-300 font-mono">{viewingTable.name} — {viewingTable.data.total_rows?.toLocaleString()} rows</h3>
+                <button onClick={() => setViewingTable(null)} className="text-slate-400 hover:text-slate-300"><EyeOff className="w-4 h-4" /></button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead><tr className="border-b border-slate-700">{viewingTable.data.columns?.map((c) => (<th key={c} className="px-2 py-1.5 text-left text-slate-400 font-medium whitespace-nowrap">{c}</th>))}</tr></thead>
-                  <tbody>{viewingTable.data.rows?.map((row, i) => (<tr key={i} className="border-b border-slate-800 hover:bg-navy-900">{Object.values(row).map((v, j) => (<td key={j} className="px-2 py-1.5 text-slate-300 whitespace-nowrap max-w-[200px] truncate">{v === null ? <span className="text-slate-600">null</span> : String(v)}</td>))}</tr>))}</tbody>
+                  <tbody>{viewingTable.data.rows?.map((row, i) => (<tr key={i} className="border-b border-slate-700 hover:bg-navy-900">{Object.values(row).map((v, j) => (<td key={j} className="px-2 py-1.5 text-slate-300 whitespace-nowrap max-w-[200px] truncate">{v === null ? <span className="text-slate-500">null</span> : String(v)}</td>))}</tr>))}</tbody>
                 </table>
               </div>
             </div>

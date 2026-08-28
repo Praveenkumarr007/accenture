@@ -41,7 +41,7 @@ KPI_CONTRACTS = {
         "refresh_frequency": "hourly",
         "threshold_percent": 10.0,
         "owner": "Sales Director",
-        "allowed_roles": ["CEO", "Sales Manager", "Admin"],
+        "allowed_roles": ["CEO", "Sales Manager", "Supply Chain Manager", "Admin"],
         "dimensions": ["product", "region", "date"],
         "business_meaning": "Volume indicator reflecting customer demand and purchase activity.",
         "lineage": {

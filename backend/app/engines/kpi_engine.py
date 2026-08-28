@@ -167,8 +167,8 @@ class KPIEngine:
             previous = fn(previous_start, previous_end)
             curr_val = current["value"]
             prev_val = previous["value"]
-            change = ((curr_val - prev_val) / prev_val * 100) if prev_val != 0 else 0
-            results[name] = {"current": curr_val, "previous": prev_val, "change_percent": round(change, 2), "details": current}
+            change = ((curr_val - prev_val) / prev_val * 100) if prev_val != 0 else (None if curr_val != 0 else 0)
+            results[name] = {"current": curr_val, "previous": prev_val, "change_percent": round(change, 2) if change is not None else None, "details": current}
         return results
 
     def get_daily_trend(self, kpi_name: str, start_date: str, end_date: str) -> list[dict]:
@@ -181,21 +181,20 @@ class KPIEngine:
         conn.close()
         trend = []
         for d in dates:
-            d_start = str(d) + "T00:00:00"
-            d_end = str(d) + "T23:59:59"
+            d_key = str(d)
             if kpi_name == "revenue":
-                val = self.calculate_revenue(d_start, d_end)["value"]
+                val = self.calculate_revenue(d_key, d_key)["value"]
             elif kpi_name == "orders":
-                val = self.calculate_orders(d_start, d_end)["value"]
+                val = self.calculate_orders(d_key, d_key)["value"]
             elif kpi_name == "aov":
-                val = self.calculate_aov(d_start, d_end)["value"]
+                val = self.calculate_aov(d_key, d_key)["value"]
             elif kpi_name == "conversion_rate":
-                val = self.calculate_conversion_rate(d_start, d_end)["value"]
+                val = self.calculate_conversion_rate(d_key, d_key)["value"]
             elif kpi_name == "marketing_roi":
-                val = self.calculate_marketing_roi(d_start, d_end)["value"]
+                val = self.calculate_marketing_roi(d_key, d_key)["value"]
             else:
                 val = 0
-            trend.append({"date": str(d), "value": round(val, 2)})
+            trend.append({"date": d_key, "value": round(val, 2)})
         return trend
 
     def get_product_breakdown(self, start_date: str, end_date: str) -> list[dict]:

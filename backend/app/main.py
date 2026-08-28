@@ -1,4 +1,4 @@
-"""BusinessIntelligence.AI - FastAPI Application"""
+﻿"""BusinessIntelligence.AI - FastAPI Application"""
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -103,28 +103,52 @@ def _dates():
     o = _orch()
     kpi = o.kpi_engine
     data_start, data_end = kpi.get_date_range()
-    try:
-        now = datetime.fromisoformat(data_end.replace("Z", "+00:00"))
-        if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
-    except Exception:
-        now = datetime.now(timezone.utc)
-    try:
-        start_dt = datetime.fromisoformat(data_start.replace("Z", "+00:00"))
-        if start_dt.tzinfo is None:
-            start_dt = start_dt.replace(tzinfo=timezone.utc)
-        days_total = (now - start_dt).days
-    except Exception:
-        days_total = 90
-    lookback = min(days_total, 90)
-    cur_start = (now - timedelta(days=min(7, lookback))).isoformat()
-    cur_end = now.isoformat()
-    prev_start = (now - timedelta(days=min(14, lookback * 2))).isoformat()
-    prev_end = cur_start
+
+    def _parse(v):
+        try:
+            dt = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            return datetime.now(timezone.utc)
+
+    end_dt = _parse(data_end)
+    start_dt = _parse(data_start)
+    span_days = max((end_dt - start_dt).days, 1)
+
+    # Adapt the current/previous windows to the actual data span:
+    #  - 7 days of data  -> use the whole span as "current" (no prior baseline)
+    #  - up to ~2 months -> 14-day windows
+    #  - several months  -> 30-day windows
+    #  - a year or more  -> 90-day windows
+    if span_days <= 14:
+        window = span_days
+    elif span_days <= 60:
+        window = 14
+    elif span_days <= 180:
+        window = 30
+    else:
+        window = 90
+
+    cur_start = end_dt - timedelta(days=window)
+    cur_end = end_dt
+    prev_start = cur_start - timedelta(days=window)
+    prev_end = cur_start - timedelta(days=1)
+    trend_start = max(start_dt, end_dt - timedelta(days=min(span_days + 1, 90)))
+
+    # use date-only strings so period boundaries never overlap in text comparisons
+    def _d(dt):
+        return dt.strftime("%Y-%m-%d")
+
+    has_prior = prev_end >= start_dt
+
     return {
-        "cur_start": cur_start, "cur_end": cur_end,
-        "prev_start": prev_start, "prev_end": prev_end,
-        "trend_start": (now - timedelta(days=lookback)).isoformat(), "trend_end": cur_end,
+        "cur_start": _d(cur_start), "cur_end": _d(cur_end),
+        "prev_start": _d(prev_start), "prev_end": _d(prev_end),
+        "trend_start": _d(trend_start), "trend_end": _d(cur_end),
+        "has_prior": bool(has_prior),
+        "window_days": window,
+        "span_days": span_days,
+        "period_label": f"Last {window} days vs prior {window} days" if has_prior else f"Full data period ({start_dt:%b %d} - {end_dt:%b %d})",
     }
 
 
@@ -152,10 +176,11 @@ def get_kpis(persona: str = "CEO", current_user: User = Depends(get_current_user
     for kpi_name, contract in KPI_CONTRACTS.items():
         if kpi_name not in allowed: continue
         kpi = all_data.get(kpi_name, {})
-        m = o.materiality_engine.assess_materiality(kpi_name=kpi_name, current_value=kpi.get("current",0), previous_value=kpi.get("previous",0), threshold_percent=contract["threshold_percent"])
-        trend = o.kpi_engine.get_daily_trend(kpi_name, d["prev_start"], d["cur_end"])
-        cards.append({"id": kpi_name, "name": contract["name"], "value": kpi.get("current",0), "previous_value": kpi.get("previous",0), "change_percent": kpi.get("change_percent",0), "priority": m["priority"], "status": "material" if m["is_material"] else "normal", "trend": [x["value"] for x in trend][-14:]})
-    return {"kpi_cards": cards, "persona": persona}
+        change = kpi.get("change_percent")
+        m = o.materiality_engine.assess_materiality(kpi_name=kpi_name, current_value=kpi.get("current",0), previous_value=kpi.get("previous",0) if change is not None else kpi.get("current",0), threshold_percent=contract["threshold_percent"])
+        trend = o.kpi_engine.get_daily_trend(kpi_name, d["trend_start"], d["cur_end"])
+        cards.append({"id": kpi_name, "name": contract["name"], "value": kpi.get("current",0), "previous_value": kpi.get("previous",0), "change_percent": change, "has_prior": change is not None, "priority": m["priority"], "status": "material" if m["is_material"] else "normal", "trend": [x["value"] for x in trend][-14:]})
+    return {"kpi_cards": cards, "persona": persona, "period": d["period_label"], "has_prior": d["has_prior"], "date_range": {"current": f"{d['cur_start'][:10]} to {d['cur_end'][:10]}", "previous": f"{d['prev_start'][:10]} to {d['prev_end'][:10]}"}}
 
 
 @app.get("/api/kpis/{kpi_id}")
@@ -249,21 +274,232 @@ def feedback_dashboard(current_user: User = Depends(get_current_user), db: Sessi
     return {"total_feedback": total, "positive_count": pos, "negative_count": neg, "positive_rate": round(pos/total*100,1) if total>0 else 0, "most_common_correction": common[0] if common else None, "feedback_trend": []}
 
 
+def _assistant_response(req: AssistantRequest, user_role: str) -> dict:
+    o = _orch(); d = _dates(); msg = req.message.lower()
+    allowed = ROLE_KPI_ACCESS.get(user_role, [])
+
+    def run(kpi: str) -> dict:
+        return o.run_full_analysis(kpi, d["cur_start"], d["cur_end"], d["prev_start"], d["prev_end"], req.persona, user_role)
+
+    def kpi_name(k: str) -> str:
+        return KPI_CONTRACTS.get(k, {}).get("name", k.title())
+
+    def default_kpi() -> str:
+        pref = ["conversion_rate", "marketing_roi", "orders"] if user_role == "Marketing Manager" else ["revenue", "orders", "aov", "conversion_rate", "marketing_roi"]
+        for k in pref:
+            if k in allowed: return k
+        return allowed[0] if allowed else "revenue"
+
+    def fmt(v):
+        return f"{v:,.0f}" if isinstance(v, (int, float)) and abs(v) >= 100 else f"{v:,.2f}" if isinstance(v, (int, float)) else str(v)
+
+    def drivers_lines(a, n=5):
+        ds = sorted(a.get("drivers", []), key=lambda x: abs(x.get("contribution_percent", 0)), reverse=True)
+        if not ds: return "No material drivers detected in the current period."
+        return "\n".join(f"  {d['name']}: {d.get('contribution_percent',0):.1f}% contribution" for d in ds[:n])
+
+    def conf_info(a):
+        c = a.get("confidence", {})
+        score = min(float(c.get("confidence_score", 0) or 0), 100.0)
+        missing = c.get("data_sources_missing", [])
+        txt = f"Confidence: {score:.0f}% ({c.get('confidence_level', 'N/A').title()})"
+        if missing: txt += f" | Missing data: {', '.join(missing)}"
+        return txt, score
+
+    def rec_lines(a, n=3):
+        rs = a.get("recommendations", [])[:n]
+        if not rs: return []
+        return [f"  {r.get('action','')} (Owner: {r.get('owner','')})" for r in rs]
+
+    # --- intent detection ---
+    has_marketing = any(k in msg for k in ("marketing", "campaign", "roi"))
+    has_conversion = "conversion" in msg
+    has_aov = any(k in msg for k in ("average order", "aov", "order value", "basket"))
+    has_orders = any(k in msg for k in ("order", "volume of sales", "orders"))
+    has_summary = any(k in msg for k in ("summary", "summarize", "overview", "status", "snapshot", "kpi performance"))
+    has_confidence = any(k in msg for k in ("confidence", "confident", "reliable", "trust", "accurate"))
+    has_product = any(k in msg for k in ("product", "item", "sku", "top selling"))
+    has_region = any(k in msg for k in ("region", "area", "location", "geography", "city"))
+    has_trend = any(k in msg for k in ("trend", "over time", "daily", "since", "progress", "trajectory"))
+    has_anomaly = any(k in msg for k in ("anomal", "unusual", "abnormal", "spike", "outlier", "weird"))
+    has_recommend = any(k in msg for k in ("recommend", "should i", "action", "improve", "next step", "do next", "advice"))
+    has_why = any(k in msg for k in ("why", "cause", "reason", "explain", "what happened", "happening"))
+
+    # --- summary across allowed KPIs ---
+    if has_summary:
+        lines = ["Here's your current business snapshot:\n"]
+        ok_kpis = []
+        for k in allowed:
+            a = run(k)
+            if "error" in a: continue
+            ok_kpis.append(a)
+            ch = a.get("change_percent")
+            cur = fmt(a.get("current_value", 0))
+            if ch is None:
+                lines.append(f"  {kpi_name(a['kpi_name'])}: {cur} (full period, no prior baseline)")
+            else:
+                lines.append(f"  {kpi_name(a['kpi_name'])}: {cur} ({'+' if ch>0 else ''}{ch:.1f}%)")
+        if not ok_kpis:
+            return {"response": "No KPI data available for your role.", "evidence_used": [], "confidence": 0}
+        c_i, s_i = conf_info(ok_kpis[0])
+        lines.append(f"\n{c_i}")
+        top = (ok_kpis[0].get("drivers") or [{"name":"N/A"}])[0]["name"]
+        lines.append(f"\nTop driver ({kpi_name(ok_kpis[0]['kpi_name'])}): {top}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- product breakdown ---
+    if has_product:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        rows = a.get("product_breakdown", [])[:5]
+        if not rows: return {"response": "No product-level data available.", "evidence_used": [], "confidence": 0}
+        lines = ["Product breakdown by revenue contribution:\n"]
+        for r in rows:
+            lines.append(f"  {r['product_name']}: {fmt(r['revenue'])} ({r.get('contribution_percent',0):.0f}%) - {r.get('orders',0)} orders")
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- region breakdown ---
+    if has_region:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        rows = a.get("region_breakdown", [])[:5]
+        if not rows: return {"response": "No region-level data available.", "evidence_used": [], "confidence": 0}
+        lines = ["Regional breakdown by revenue:\n"]
+        for r in rows:
+            lines.append(f"  {r['region']}: {fmt(r['revenue'])} ({r.get('contribution_percent',0):.0f}%) - {r.get('orders',0)} orders")
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- trend ---
+    if has_trend:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        t = a.get("trend", [])
+        if not t: return {"response": "Insufficient history to show a trend.", "evidence_used": [], "confidence": 0}
+        vals = [x["value"] for x in t]
+        peak = max(t, key=lambda x: x["value"]); trough = min(t, key=lambda x: x["value"])
+        lines = [f"Daily revenue trend ({t[0]['date']} to {t[-1]['date']}):\n"]
+        lines.append("  " + "  ".join(f"{x['date'][5:]} {fmt(x['value'])}" for x in t))
+        lines.append(f"\nPeak: {peak['date']} ({fmt(peak['value'])})  |  Low: {trough['date']} ({fmt(trough['value'])})")
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- anomaly ---
+    if has_anomaly:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        an = a.get("anomaly", {})
+        status = "an anomaly was detected" if an.get("is_anomaly") else "no significant anomaly was detected"
+        lines = [f"For {kpi_name(a['kpi_name'])}, {status}."]
+        if an.get("reason"): lines.append(f"Reason: {an['reason']}")
+        if an.get("z_score") is not None: lines.append(f"Z-score: {an['z_score']:.2f}")
+        c_i, s_i = conf_info(a)
+        lines.append(c_i)
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- confidence ---
+    if has_confidence:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        c = a.get("confidence", {})
+        score = min(float(c.get("confidence_score", 0) or 0), 100.0)
+        missing = c.get("data_sources_missing", [])
+        lines = [f"Analysis confidence for {kpi_name(a['kpi_name'])} is {score:.0f}% ({c.get('confidence_level','unknown').title()})."]
+        if missing:
+            lines.append(f"Confidence is limited by missing data: {', '.join(missing)}.")
+        else:
+            lines.append("All required data sources were consulted.")
+        lines.append(f"Evidence sources used: {', '.join(a.get('data_sources', []))}.")
+        if a.get("abstention", {}).get("should_abstain"):
+            lines.append("The system abstains from a definitive conclusion due to insufficient evidence.")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": score}
+
+    # --- recommendations ---
+    if has_recommend:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        rs = rec_lines(a)
+        if not rs: return {"response": "No actionable recommendations at this time.", "evidence_used": [], "confidence": 0}
+        lines = ["Recommended actions:\n"] + rs
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- why / explain ---
+    if has_why:
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        ch = a.get("change_percent")
+        if ch is None:
+            lead = f"{kpi_name(a['kpi_name'])} is currently at {fmt(a.get('current_value',0))} for the full data period (no prior baseline to compare against)."
+        else:
+            lead = f"{kpi_name(a['kpi_name'])} {'increased' if ch>0 else 'decreased'} by {abs(ch):.1f}% in the current period."
+        lines = [lead, "\nWhat's driving it:\n", drivers_lines(a)]
+        ev = a.get("evidence", [])[:3]
+        if ev:
+            lines.append("\nEvidence:")
+            for e in ev:
+                lines.append(f"  {e.get('source','')}: {e.get('analytical_method', e.get('metric',''))}")
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": a.get("evidence", [])[:5], "confidence": s_i}
+
+    # --- drivers only ---
+    if any(k in msg for k in ("driver", "contribution", "contribut", "factor", "what changed", "moved", "impact")):
+        a = run(default_kpi())
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        lines = [f"Top drivers of {kpi_name(a['kpi_name'])}:\n", drivers_lines(a, 8)]
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": [], "confidence": s_i}
+
+    # --- KPI-specific ---
+    target = None
+    if has_marketing and "marketing_roi" in allowed: target = "marketing_roi"
+    elif has_aov and "aov" in allowed: target = "aov"
+    elif has_conversion and "conversion_rate" in allowed: target = "conversion_rate"
+    elif has_orders and "orders" in allowed: target = "orders"
+    if target:
+        a = run(target)
+        if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+        ch = a.get("change_percent")
+        cur = fmt(a.get("current_value", 0))
+        if ch is None:
+            lead = f"{kpi_name(a['kpi_name'])}: {cur} for the full data period (no prior baseline)."
+        else:
+            lead = f"{kpi_name(a['kpi_name'])}: {cur} ({'+' if ch>0 else ''}{ch:.1f}%)."
+        lines = [lead, "\nDrivers:\n", drivers_lines(a)]
+        rs = rec_lines(a)
+        if rs: lines.append("\nRecommendations:\n" + "\n".join(rs))
+        c_i, s_i = conf_info(a)
+        lines.append(f"\n{c_i}")
+        return {"response": "\n".join(lines), "evidence_used": a.get("evidence", [])[:5], "confidence": s_i}
+
+    # --- default ---
+    a = run(default_kpi())
+    if "error" in a: return {"response": str(a.get("message", "Unable to analyze.")), "evidence_used": [], "confidence": 0}
+    ch = a.get("change_percent")
+    cur = fmt(a.get("current_value", 0))
+    if ch is None:
+        resp = f"{kpi_name(a['kpi_name'])} is currently at {cur} for the full data period (no prior baseline available)."
+    else:
+        resp = f"{kpi_name(a['kpi_name'])} is {'up' if ch>0 else 'down'} {abs(ch):.1f}% at {cur}."
+    resp += f"\n\nDrivers:\n{drivers_lines(a)}"
+    rs = rec_lines(a)
+    if rs: resp += "\n\nTop recommendations:\n" + "\n".join(rs)
+    c_i, s_i = conf_info(a)
+    resp += f"\n\n{c_i}"
+    return {"response": resp, "evidence_used": a.get("evidence", [])[:5], "confidence": s_i}
+
+
 @app.post("/api/assistant")
 def assistant(req: AssistantRequest, current_user: User = Depends(get_current_user)):
-    o = _orch(); d = _dates(); msg = req.message.lower()
-    kpi = "marketing_roi" if "marketing" in msg or "campaign" in msg else "conversion_rate" if "conversion" in msg else "orders" if "order" in msg else "revenue"
-    a = o.run_full_analysis(kpi_name=kpi, current_start=d["cur_start"], current_end=d["cur_end"], previous_start=d["prev_start"], previous_end=d["prev_end"], persona=req.persona, user_role=current_user.role_name)
-    if "error" in a: return AssistantResponse(response=a.get("message","Unable to analyze."), confidence=0)
-    drivers_text = "\n".join(f"- {d['name']}: {d['contribution_percent']}%" for d in a.get("drivers",[])[:5])
-    conf = a.get("confidence",{}).get("confidence_score",0); ch = a.get("change_percent",0); direction = "increased" if ch > 0 else "decreased"
-    if a.get("abstention",{}).get("should_abstain"):
-        resp = f"{a['kpi_name']} {direction} {abs(ch):.1f}%. Confidence: {conf}%. Missing: {', '.join(a.get('confidence',{}).get('data_sources_missing',[]))}."
-    else:
-        resp = f"{a['kpi_name']} {direction} {abs(ch):.1f}% with {conf}% confidence.\n\nKey drivers:\n{drivers_text}"
-        if a.get("recommendations"): resp += f"\n\nTop recommendation: {a['recommendations'][0]['action']}"
-    ev = [{"source":e.get("source",""),"metric":e.get("metric",""),"change":e.get("change_percent",0)} for e in a.get("evidence",[])[:5]]
-    return AssistantResponse(response=resp, evidence_used=ev, confidence=conf, data_sources_consulted=a.get("data_sources",[]))
+    res = _assistant_response(req, current_user.role_name)
+    return AssistantResponse(response=res["response"], evidence_used=res["evidence_used"], confidence=res["confidence"], data_sources_consulted=[])
 
 
 @app.get("/api/telemetry")

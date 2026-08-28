@@ -37,7 +37,7 @@ export default function DriversPage() {
         <select
           value={kpiName}
           onChange={e => setKpiName(e.target.value)}
-          className="bg-navy-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-accent"
+          className="bg-navy-700 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-accent"
         >
           <option value="revenue">Revenue</option>
           <option value="orders">Orders</option>
@@ -52,12 +52,10 @@ export default function DriversPage() {
           <h3 className="font-semibold text-sm mb-4">Contribution Chart</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis type="number" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis type="category" dataKey="name" width={150} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1a2235', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5ea" />
+              <XAxis type="number" tick={{ fill: '#6e6e73', fontSize: 10 }} />
+              <YAxis type="category" dataKey="name" width={150} tick={{ fill: '#3a3a3c', fontSize: 10 }} />
+              <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px', color: '#1d1d1f' }} />
               <Bar dataKey="contribution" radius={[0, 4, 4, 0]} barSize={20}>
                 {chartData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
@@ -75,7 +73,7 @@ export default function DriversPage() {
                 <span className="text-xs text-slate-500 w-6">#{driver.rank}</span>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-200">{driver.name}</span>
+                    <span className="text-sm text-slate-300">{driver.name}</span>
                     {driver.is_primary && <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full">Primary</span>}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
@@ -92,7 +90,7 @@ export default function DriversPage() {
                     />
                   </div>
                 </div>
-                <span className="text-sm font-bold text-slate-200 w-14 text-right">{driver.contribution_percent}%</span>
+                <span className="text-sm font-bold text-slate-300 w-14 text-right">{driver.contribution_percent}%</span>
               </div>
             ))}
           </div>

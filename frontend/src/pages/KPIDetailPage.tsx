@@ -76,8 +76,14 @@ export default function KPIDetailPage() {
         <div className="bg-navy-800 rounded-xl p-4 card-glow">
           <p className="text-xs text-slate-400">Change</p>
           <div className="flex items-center gap-2 mt-1">
-            {data.change_percent >= 0 ? <TrendingUp className="w-5 h-5 text-green-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
-            <p className={`text-xl font-bold ${getChangeColor(data.change_percent)}`}>{formatPercent(data.change_percent)}</p>
+            {data.change_percent == null ? (
+              <p className={`text-xl font-bold text-slate-400`}>No prior data</p>
+            ) : (
+              <>
+                {data.change_percent >= 0 ? <TrendingUp className="w-5 h-5 text-green-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+                <p className={`text-xl font-bold ${getChangeColor(data.change_percent)}`}>{formatPercent(data.change_percent)}</p>
+              </>
+            )}
           </div>
         </div>
         <ConfidenceGauge score={data.confidence.confidence_score} level={data.confidence.confidence_level} />
@@ -103,14 +109,14 @@ export default function KPIDetailPage() {
           <h3 className="font-semibold text-sm mb-4">Historical Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 10 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5ea" />
+              <XAxis dataKey="date" tick={{ fill: '#6e6e73', fontSize: 10 }} />
+              <YAxis tick={{ fill: '#6e6e73', fontSize: 10 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a2235', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                labelStyle={{ color: '#94a3b8' }}
+                contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px' }}
+                labelStyle={{ color: '#1d1d1f' }}
               />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="value" stroke="#0071e3" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -119,11 +125,11 @@ export default function KPIDetailPage() {
           <h3 className="font-semibold text-sm mb-4">Driver Decomposition</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={driverData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis type="number" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5ea" />
+              <XAxis type="number" tick={{ fill: '#6e6e73', fontSize: 10 }} />
+              <YAxis type="category" dataKey="name" width={120} tick={{ fill: '#3a3a3c', fontSize: 10 }} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a2235', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e5ea', borderRadius: '8px', color: '#1d1d1f' }}
               />
               <Bar dataKey="contribution" radius={[0, 4, 4, 0]}>
                 {driverData.map((entry, i) => (
@@ -143,7 +149,7 @@ export default function KPIDetailPage() {
               <span className="text-xs text-slate-500 w-6">#{driver.rank}</span>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-200">{driver.name}</span>
+                  <span className="text-sm font-medium text-slate-300">{driver.name}</span>
                   {driver.is_primary && <span className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full">Primary</span>}
                 </div>
                 <p className="text-[10px] text-slate-500 mt-0.5">{driver.data_source} • Confidence: {(driver.confidence * 100).toFixed(0)}%</p>
@@ -156,7 +162,7 @@ export default function KPIDetailPage() {
                   />
                 </div>
               </div>
-              <span className="text-sm font-bold text-slate-200 w-16 text-right">{driver.contribution_percent}%</span>
+              <span className="text-sm font-bold text-slate-300 w-16 text-right">{driver.contribution_percent}%</span>
             </div>
           ))}
         </div>

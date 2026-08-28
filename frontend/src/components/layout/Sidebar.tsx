@@ -26,18 +26,18 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className={`${collapsed ? 'w-16' : 'w-60'} h-screen bg-navy-800 border-r border-slate-700/50 flex flex-col transition-all duration-300 flex-shrink-0`}>
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-slate-700/50">
+    <aside className={`${collapsed ? 'w-16' : 'w-60'} h-screen bg-navy-800 border-r border-slate-700 flex flex-col transition-all duration-300 flex-shrink-0`}>
+      <div className="flex items-center gap-2 px-4 py-4 border-b border-slate-700">
         <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center flex-shrink-0">
-          <Zap className="w-4 h-4" />
+          <Zap className="w-4 h-4 text-white" />
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="text-sm font-bold tracking-tight">BI.AI</p>
+            <p className="text-sm font-bold tracking-tight text-slate-300">BI.AI</p>
             <p className="text-[10px] text-slate-500">KPI Intelligence</p>
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="ml-auto text-slate-500 hover:text-white transition">
+        <button onClick={() => setCollapsed(!collapsed)} className="ml-auto text-slate-500 hover:text-slate-300 transition">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>
@@ -51,8 +51,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
                 isActive
-                  ? 'bg-accent/15 text-accent-light font-medium'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-accent/10 text-accent font-medium'
+                  : 'text-slate-400 hover:text-slate-300 hover:bg-navy-600'
               } ${collapsed ? 'justify-center' : ''}`
             }
           >
@@ -62,7 +62,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-slate-700/50">
+      <div className="p-3 border-t border-slate-700">
         {user && !collapsed && (
           <div className="mb-2 px-2">
             <p className="text-xs font-medium text-slate-300 truncate">{user.full_name}</p>
@@ -71,7 +71,7 @@ export default function Sidebar() {
         )}
         <button
           onClick={logout}
-          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition ${collapsed ? 'justify-center' : ''}`}
+          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition ${collapsed ? 'justify-center' : ''}`}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span>Logout</span>}

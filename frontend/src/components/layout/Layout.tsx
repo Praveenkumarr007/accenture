@@ -5,7 +5,7 @@ import TopNav from './TopNav';
 
 export default function Layout() {
   return (
-    <div className="flex h-screen overflow-hidden bg-navy-900">
+    <div className="flex h-screen overflow-hidden bg-navy-900 text-slate-300">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopNav />

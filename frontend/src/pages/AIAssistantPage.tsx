@@ -56,24 +56,29 @@ export default function AIAssistantPage() {
 
   const quickQuestions = [
     'Why did revenue decline?',
-    'What are the main drivers?',
+    'What are the main drivers of revenue?',
     'What should I do next?',
-    'Show me marketing analysis',
-    'Why is confidence low?',
+    "Show me marketing campaign ROI",
+    'How is conversion rate performing?',
+    'Analyze recent order volume',
+    'Which sales drivers changed most?',
+    'How confident is this analysis?',
+    'What is my top recommendation right now?',
+    'Summarize current KPI performance',
   ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Bot size={24} className="text-blue-400" /> AI Assistant
+        <h1 className="text-2xl font-bold text-slate-300 flex items-center gap-2">
+          <Bot size={24} className="text-accent" /> AI Assistant
         </h1>
         <p className="text-sm text-slate-400 mt-1">
           Ask questions about KPI movements, drivers, and recommendations
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-navy-800/30 rounded-xl border border-slate-700/30">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-navy-800/30 rounded-xl border border-slate-700/50">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -84,11 +89,11 @@ export default function AIAssistantPage() {
             <div className={`max-w-[70%] p-3 rounded-xl ${
               msg.role === 'user'
                 ? 'bg-blue-600 text-white'
-                : 'bg-navy-700/50 border border-slate-700/30 text-slate-200'
+                : 'bg-navy-700/50 border border-slate-700 text-slate-300'
             }`}>
               <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
               {msg.model && msg.model !== 'fallback' && (
-                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-700/30 text-[10px] text-slate-500">
+                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500">
                   <span className="flex items-center gap-1"><Zap size={10} /> {msg.model}</span>
                   <span>{msg.tokens} tokens</span>
                   <span>${msg.cost?.toFixed(4)}</span>

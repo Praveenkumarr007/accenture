@@ -53,7 +53,7 @@ export default function OverviewPage() {
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-500">Persona: {user?.role_name}</p>
-          <p className="text-xs text-slate-600">Last 7 days vs prior 7 days</p>
+          <p className="text-xs text-slate-400">Current data period</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export default function OverviewPage() {
           <Link
             key={kpi.id}
             to={`/kpis/${kpi.id}`}
-            className={`bg-navy-800 rounded-xl p-4 card-glow hover:border-accent/30 transition-all group ${kpi.priority !== 'NONE' && kpi.priority !== 'LOW' ? 'border-l-2 ' + (kpi.change_percent < 0 ? 'border-l-red-500' : 'border-l-green-500') : ''}`}
+            className={`bg-navy-800 rounded-xl p-4 card-glow hover:border-accent/30 transition-all group ${kpi.priority !== 'NONE' && kpi.priority !== 'LOW' ? 'border-l-2 ' + ((kpi.change_percent ?? 0) < 0 ? 'border-l-red-500' : 'border-l-green-500') : ''}`}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-400">{kpi.name}</span>
@@ -78,15 +78,21 @@ export default function OverviewPage() {
                 : formatCurrency(kpi.value)}
             </p>
             <div className="flex items-center gap-1.5 mt-1">
-              {kpi.change_percent >= 0 ? (
-                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+              {kpi.change_percent == null ? (
+                <span className="text-xs font-medium text-slate-400">No prior period data</span>
               ) : (
-                <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                <>
+                  {kpi.change_percent >= 0 ? (
+                    <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+                  ) : (
+                    <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                  )}
+                  <span className={`text-xs font-medium ${getChangeColor(kpi.change_percent)}`}>
+                    {formatPercent(kpi.change_percent)}
+                  </span>
+                  <span className="text-[10px] text-slate-500">vs prev period</span>
+                </>
               )}
-              <span className={`text-xs font-medium ${getChangeColor(kpi.change_percent)}`}>
-                {formatPercent(kpi.change_percent)}
-              </span>
-              <span className="text-[10px] text-slate-500">vs prev week</span>
             </div>
             {kpi.trend && kpi.trend.length > 0 && (
               <div className="mt-3 h-8 flex items-end gap-px">
@@ -101,7 +107,9 @@ export default function OverviewPage() {
                       className="flex-1 rounded-sm"
                       style={{
                         height: `${Math.max(4, h)}%`,
-                        backgroundColor: v >= (kpi.previous_value / 7) ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)',
+                        backgroundColor: kpi.has_prior
+                          ? v >= (kpi.previous_value / 14) ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'
+                          : 'rgba(59,130,246,0.4)',
                       }}
                     />
                   );
@@ -126,7 +134,9 @@ export default function OverviewPage() {
             <div className="lg:col-span-2 space-y-4">
               <div className="bg-navy-900/50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-slate-300 mb-1">
-                  {primaryInsight.kpi_name} declined {Math.abs(primaryInsight.change_percent).toFixed(1)}%
+                  {primaryInsight.change_percent != null
+                    ? `${primaryInsight.kpi_name} ${primaryInsight.change_percent >= 0 ? 'increased' : 'declined'} ${Math.abs(primaryInsight.change_percent).toFixed(1)}%`
+                    : `${primaryInsight.kpi_name} requires attention (full data period, no prior baseline)`}
                 </h3>
                 <p className="text-xs text-slate-400">
                   Current: {formatCurrency(primaryInsight.current_value)} | Previous: {formatCurrency(primaryInsight.previous_value)}
@@ -250,7 +260,7 @@ export default function OverviewPage() {
                 className="flex items-center justify-between p-3 bg-navy-900/50 rounded-lg hover:bg-navy-700/50 transition"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${insight.change_percent < 0 ? 'bg-red-400' : 'bg-green-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${insight.change_percent == null ? 'bg-blue-400' : insight.change_percent < 0 ? 'bg-red-400' : 'bg-green-400'}`} />
                   <div>
                     <p className="text-xs font-medium text-slate-200">{insight.kpi_name}</p>
                     <p className="text-[10px] text-slate-500">{insight.drivers.length} drivers identified</p>
