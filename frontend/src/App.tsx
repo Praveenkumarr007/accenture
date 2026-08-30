@@ -14,6 +14,7 @@ import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
 import AssistantPage from './pages/AssistantPage';
 import DataUploadPage from './pages/DataUploadPage';
+import HelpPage from './pages/HelpPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -40,6 +41,7 @@ function App() {
             <Route path="admin" element={<AdminPage />} />
             <Route path="upload" element={<DataUploadPage />} />
             <Route path="assistant" element={<AssistantPage />} />
+            <Route path="help" element={<HelpPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -21,6 +21,7 @@ export default function TopNav() {
   return (
     <header className="h-14 bg-navy-800/70 border-b border-slate-700 flex items-center px-6 backdrop-blur-xl">
       <div className="flex items-center gap-3">
+        <img src="/bi-logo.jpeg" alt="BI.AI logo" className="w-6 h-6 rounded-md object-contain" />
         <h1 className="text-sm font-semibold text-slate-300">BusinessIntelligence.AI</h1>
         <span className="text-[10px] px-2 py-0.5 bg-accent/10 text-accent rounded-full font-medium">Demo Mode</span>
       </div>

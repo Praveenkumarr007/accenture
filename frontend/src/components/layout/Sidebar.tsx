@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Activity, Lightbulb, GitBranch, Target,
   Database, MessageSquare, FileText, Settings, Bot, LogOut,
-  ChevronLeft, ChevronRight, Zap, Upload
+  ChevronLeft, ChevronRight, Upload, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -18,6 +18,7 @@ const navItems = [
   { path: '/feedback', label: 'Feedback', icon: MessageSquare },
   { path: '/reports', label: 'Reports', icon: FileText },
   { path: '/assistant', label: 'AI Assistant', icon: Bot },
+  { path: '/help', label: 'Help', icon: HelpCircle },
   { path: '/admin', label: 'Admin', icon: Settings },
 ];
 
@@ -28,9 +29,7 @@ export default function Sidebar() {
   return (
     <aside className={`${collapsed ? 'w-16' : 'w-60'} h-screen bg-navy-800 border-r border-slate-700 flex flex-col transition-all duration-300 flex-shrink-0`}>
       <div className="flex items-center gap-2 px-4 py-4 border-b border-slate-700">
-        <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center flex-shrink-0">
-          <Zap className="w-4 h-4 text-white" />
-        </div>
+        <img src="/bi-logo.jpeg" alt="BI.AI logo" className="w-9 h-9 rounded-lg object-contain flex-shrink-0" />
         {!collapsed && (
           <div className="overflow-hidden">
             <p className="text-sm font-bold tracking-tight text-slate-300">BI.AI</p>

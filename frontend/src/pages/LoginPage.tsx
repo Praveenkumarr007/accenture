@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 
@@ -32,9 +32,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-navy-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-8 h-8 text-white" />
-          </div>
+          <img src="/bi-logo.jpeg" alt="BI.AI logo" className="w-20 h-20 rounded-2xl object-contain mx-auto mb-4 shadow-apple" />
           <h1 className="text-2xl font-bold text-slate-300">BusinessIntelligence.AI</h1>
           <p className="text-slate-400 text-sm mt-1">KPI Intelligence → Evidence → Action</p>
         </div>
